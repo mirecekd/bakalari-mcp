@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  bakalari-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bakalari-mcp-server:latest
+    container_name: bakalari-mcp-server
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    # Parametry se předávají přes command
+    # Přepište podle potřeby:
+    command: [
+      "--user", "${BAKALARI_USER:-your_username}",
+      "--password", "${BAKALARI_PASSWORD:-your_password}", 
+      "--url", "${BAKALARI_URL:-https://school.bakalari.cz}"
+    ]
+    
+    # Pro stdio transport nepotřebujeme porty
+    # ports:
+    #   - "8080:8080"
+    
+    # Volumes pro persistenci (pokud bude potřeba)
+    # volumes:
+    #   - ./data:/app/data
+
+# Pro development
+  bakalari-mcp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bakalari-mcp-server:dev
+    container_name: bakalari-mcp-dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    command: [
+      "--user", "${BAKALARI_USER:-your_username}",
+      "--password", "${BAKALARI_PASSWORD:-your_password}",
+      "--url", "${BAKALARI_URL:-https://school.bakalari.cz}"
+    ]
+    stdin_open: true
+    tty: true
+    profiles:
+      - dev

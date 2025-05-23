@@ -1,0 +1,38 @@
+# Bakaláři MCP Server - CLI Version (stdio transport)
+# ===================================================
+# This version is designed for direct MCP client integration using stdio transport.
+# Use this for local development, Cline integration, or any MCP client that connects directly.
+FROM python:3.11-slim
+
+# Nastavení working directory
+WORKDIR /app
+
+# Kopírování dependency souborů
+COPY pyproject.toml ./
+COPY README.md ./
+COPY LICENSE ./
+
+# Instalace build dependencies a následně aplikačních dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Kopírování zdrojového kódu
+COPY src/ ./src/
+COPY main.py ./
+
+# Nastavení Python path
+ENV PYTHONPATH=/app
+
+# Expose není potřeba, protože používáme stdio transport
+# EXPOSE port
+
+# Entry point s možností předání parametrů
+ENTRYPOINT ["python", "main.py"]
+
+# Default parametry (můžou být přepsány při docker run)
+CMD ["--url", "https://skola.bakalari.cz"]
+
+# Metadata
+LABEL maintainer="Miroslav Dvořák" \
+      description="MCP Server pro Bakaláři v3 API" \
+      version="1.0.0"
