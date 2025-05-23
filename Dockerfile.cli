@@ -7,18 +7,16 @@ FROM python:3.11-slim
 # Nastavení working directory
 WORKDIR /app
 
-# Kopírování dependency souborů
+# Kopírování všech souborů nejdříve
 COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
+COPY src/ ./src/
+COPY main.py ./
 
 # Instalace build dependencies a následně aplikačních dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
-
-# Kopírování zdrojového kódu
-COPY src/ ./src/
-COPY main.py ./
 
 # Nastavení Python path
 ENV PYTHONPATH=/app

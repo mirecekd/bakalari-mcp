@@ -116,95 +116,6 @@ async def api_request(endpoint: str, method: str = "GET", **kwargs) -> Dict[str,
             raise BakalariAPIError(f"Chyba připojení: {e}")
 
 
-def infer_subject_from_theme(theme: str) -> str:
-    """
-    Inferuje předmět z tématu hodiny podle klíčových slov.
-    """
-    if not theme:
-        return None
-    
-    theme_lower = theme.lower()
-    
-    # Matematika
-    if any(word in theme_lower for word in ['nerovnic', 'interval', 'rovnic', 'funkc', 'integrál', 'derivac', 'logaritm', 'goniometri']):
-        return "Matematika"
-    
-    # Čeština
-    if any(word in theme_lower for word in ['souvětí', 'skladba', 'gramatik', 'pravopis', 'literatur', 'sloh', 'čtení', 'interpretac', 'rozbor', 'básn']):
-        return "Český jazyk a literatura"
-    
-    # Fyzika
-    if any(word in theme_lower for word in ['hydraulick', 'hydrostatick', 'tlak', 'síla', 'energie', 'pohyb', 'mechanik', 'elektřin', 'magnet']):
-        return "Fyzika"
-    
-    # Dějepis
-    if any(word in theme_lower for word in ['hospodářství', 'století', 'manufaktur', 'monarchie', 'absolutis', 'stavovsk', 'historie']):
-        return "Dějepis"
-    
-    # Zeměpis
-    if any(word in theme_lower for word in ['afrika', 'continent', 'západní', 'centrální', 'geografie', 'klima']):
-        return "Zeměpis"
-    
-    # Angličtina/Němčina
-    if any(word in theme_lower for word in ['časování', 'slovesa', 'gramatik']) and 'sloves' in theme_lower:
-        return "Cizí jazyk"
-    
-    # Biologie
-    if any(word in theme_lower for word in ['život', 'oblacích', 'organismus', 'buňka', 'ekologie']):
-        return "Biologie"
-    
-    # Výtvarná výchova
-    if any(word in theme_lower for word in ['maketa', 'pokoje', 'nábytek', 'dekorace', 'výtvarné']):
-        return "Výtvarná výchova"
-    
-    # Hudební výchova  
-    if any(word in theme_lower for word in ['flétnu', 'orffovy', 'nástroje', 'píseň', 'hudba']):
-        return "Hudební výchova"
-    
-    # Film/Literatura
-    if any(word in theme_lower for word in ['brendan', 'kellsu', 'tajemství', 'kniha', 'film']):
-        return "Český jazyk a literatura"
-    
-    # Tělesná výchova
-    if any(word in theme_lower for word in ['vybíjená', 'sport', 'tělocvik']):
-        return "Tělesná výchova"
-    
-    # Test/zkouška
-    if any(word in theme_lower for word in ['test', 'zkouška', 'opakování']):
-        if 'prázdniny francouzů' in theme_lower:
-            return "Český jazyk a literatura"
-    
-    # Prezentace
-    if 'prezentace' in theme_lower:
-        if 'záchranné stanice' in theme_lower:
-            return "Biologie"
-    
-    return None
-
-
-def get_subject_abbrev(subject: str) -> str:
-    """
-    Vrací zkratku předmětu.
-    """
-    if not subject:
-        return None
-    
-    abbrevs = {
-        "Matematika": "M",
-        "Český jazyk a literatura": "Cj", 
-        "Fyzika": "F",
-        "Dějepis": "D",
-        "Zeměpis": "Z",
-        "Cizí jazyk": "Aj",
-        "Biologie": "Bi",
-        "Výtvarná výchova": "Vv",
-        "Hudební výchova": "Hv",
-        "Tělesná výchova": "Tv"
-    }
-    
-    return abbrevs.get(subject, subject[:2])
-
-
 def parse_change_description(description: str) -> Dict[str, str]:
     """
     Parsuje popis změny a extrahuje z něj předmět, učitele a místnost.
@@ -299,12 +210,17 @@ async def rozvrh(datum: str = None) -> Dict[str, Any]:
                         room_info = rooms_lookup.get(atom.get("RoomId"), {})
                         
                         # Sestavíme hodinu s požadovanými informacemi
+                        # Používáme konzistentně plné jméno učitele, pokud není k dispozici, použijeme zkratku
+                        teacher_name = teacher_info.get("Name", "")
+                        teacher_abbrev = teacher_info.get("Abbrev", "")
+                        
                         hodina = {
                             "hodina": hour_info.get("Caption", str(hour_id)),
                             "cas": f"{hour_info.get('BeginTime', '')} - {hour_info.get('EndTime', '')}" if hour_info.get('BeginTime') else None,
                             "predmet": subject_info.get("Name", ""),
                             "zkratka_predmetu": subject_info.get("Abbrev", ""),
-                            "ucitel": teacher_info.get("Abbrev", ""),
+                            "ucitel": teacher_name if teacher_name else teacher_abbrev,
+                            "ucitel_zkratka": teacher_abbrev,
                             "mistnost": room_info.get("Abbrev", ""),
                             "tema": atom.get("Theme", "")
                         }
@@ -322,18 +238,13 @@ async def rozvrh(datum: str = None) -> Dict[str, Any]:
                             if parsed.get("ucitel"):
                                 hodina["puvodni_ucitel"] = parsed["ucitel"]
                         
-                        # Inferuj předmět z tématu pokud není dostupný (jen pro nezrušené hodiny)
-                        if not hodina.get("zruseno") and not hodina["predmet"] and hodina["tema"]:
-                            inferred_subject = infer_subject_from_theme(hodina["tema"])
-                            if inferred_subject:
-                                hodina["predmet"] = inferred_subject
-                                hodina["zkratka_predmetu"] = get_subject_abbrev(inferred_subject)
-                        
-                        # Přidej informaci o změně pokud existuje
+                        # Pokud je změna, přidáme informaci o změně (NEPŘEPISUJEME učitele z API)
                         if atom.get("Change"):
+                            change_desc = atom["Change"].get("Description", "")
+                            
                             hodina["zmena"] = {
                                 "typ": atom["Change"].get("ChangeType"),
-                                "popis": atom["Change"].get("Description", "")
+                                "popis": change_desc
                             }
                         
                         hodiny.append(hodina)
@@ -346,8 +257,127 @@ async def rozvrh(datum: str = None) -> Dict[str, Any]:
             "datum": datum,
             "den_tydne": day_of_week,
             "hodiny": hodiny,
-            "pocet_hodin": len(hodiny)
+            "pocet_hodin": len(hodiny),
+            "debug_teachers": {
+                "lookup": [(k, v.get("Name"), v.get("Abbrev")) for k, v in teachers_lookup.items()],
+                "sample_teacher": list(teachers_lookup.values())[0] if teachers_lookup else None
+            }
         }
+        
+    except BakalariAuthError as e:
+        return {"error": f"Chyba autentizace: {e}"}
+    except BakalariAPIError as e:
+        return {"error": f"Chyba API: {e}"}
+    except Exception as e:
+        return {"error": f"Neočekávaná chyba: {e}"}
+
+
+@mcp.tool()
+async def absence() -> Dict[str, Any]:
+    """
+    Získá informace o absencích studenta.
+    
+    Returns:
+        Dict obsahující absence podle dní a podle předmětů s detailními statistikami
+    """
+    try:
+        endpoint = "/api/3/absence/student"
+        absence_data = await api_request(endpoint)
+        
+        # Zpracování dat o absencích
+        formatted_absence = {
+            "typ": "absence",
+            "prah_procent": absence_data.get("PercentageThreshold", 0),
+            "absence_podle_dni": [],
+            "absence_podle_predmetu": [],
+            "souhrn": {
+                "celkem_dni": 0,
+                "dny_s_absenci": 0,
+                "celkove_statistiky": {
+                    "nevyreseno": 0,
+                    "ok": 0,
+                    "zmeskano": 0,
+                    "pozdni_prichod": 0,
+                    "brzy_odchod": 0,
+                    "skolni_akce": 0,
+                    "distancni_vyuka": 0
+                }
+            }
+        }
+        
+        # Zpracování absencí podle dní
+        if "Absences" in absence_data:
+            for den_data in absence_data["Absences"]:
+                den_info = {
+                    "datum": den_data.get("Date", "").split("T")[0] if den_data.get("Date") else None,
+                    "nevyreseno": den_data.get("Unsolved", 0),
+                    "ok": den_data.get("Ok", 0),
+                    "zmeskano": den_data.get("Missed", 0),
+                    "pozdni_prichod": den_data.get("Late", 0),
+                    "brzy_odchod": den_data.get("Soon", 0),
+                    "skolni_akce": den_data.get("School", 0),
+                    "distancni_vyuka": den_data.get("DistanceTeaching", 0),
+                    "celkem_hodin": (den_data.get("Unsolved", 0) + den_data.get("Ok", 0) + 
+                                   den_data.get("Missed", 0) + den_data.get("Late", 0) + 
+                                   den_data.get("Soon", 0) + den_data.get("School", 0) + 
+                                   den_data.get("DistanceTeaching", 0))
+                }
+                
+                # Kontrola zda má den nějaké absence
+                if den_info["celkem_hodin"] > 0:
+                    formatted_absence["absence_podle_dni"].append(den_info)
+                    formatted_absence["souhrn"]["dny_s_absenci"] += 1
+                    
+                    # Přičtení k celkovým statistikám
+                    formatted_absence["souhrn"]["celkove_statistiky"]["nevyreseno"] += den_info["nevyreseno"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["ok"] += den_info["ok"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["zmeskano"] += den_info["zmeskano"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["pozdni_prichod"] += den_info["pozdni_prichod"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["brzy_odchod"] += den_info["brzy_odchod"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["skolni_akce"] += den_info["skolni_akce"]
+                    formatted_absence["souhrn"]["celkove_statistiky"]["distancni_vyuka"] += den_info["distancni_vyuka"]
+                
+                formatted_absence["souhrn"]["celkem_dni"] += 1
+        
+        # Zpracování absencí podle předmětů
+        if "AbsencesPerSubject" in absence_data:
+            for predmet_data in absence_data["AbsencesPerSubject"]:
+                predmet_info = {
+                    "nazev_predmetu": predmet_data.get("SubjectName", ""),
+                    "pocet_hodin_celkem": predmet_data.get("LessonsCount", 0),
+                    "zakladni_absence": predmet_data.get("Base", 0),
+                    "pozdni_prichod": predmet_data.get("Late", 0),
+                    "brzy_odchod": predmet_data.get("Soon", 0),
+                    "skolni_akce": predmet_data.get("School", 0),
+                    "distancni_vyuka": predmet_data.get("DistanceTeaching", 0)
+                }
+                
+                # Výpočet procenta absence
+                if predmet_info["pocet_hodin_celkem"] > 0:
+                    celkem_absenci = (predmet_info["zakladni_absence"] + 
+                                    predmet_info["pozdni_prichod"] + 
+                                    predmet_info["brzy_odchod"])
+                    predmet_info["procento_absence"] = round(
+                        (celkem_absenci / predmet_info["pocet_hodin_celkem"]) * 100, 2
+                    )
+                    predmet_info["nad_prahem"] = predmet_info["procento_absence"] > (formatted_absence["prah_procent"] * 100)
+                else:
+                    predmet_info["procento_absence"] = 0
+                    predmet_info["nad_prahem"] = False
+                
+                formatted_absence["absence_podle_predmetu"].append(predmet_info)
+        
+        # Seřazení předmětů podle procenta absence (sestupně)
+        formatted_absence["absence_podle_predmetu"].sort(
+            key=lambda x: x["procento_absence"], reverse=True
+        )
+        
+        # Seřazení dní podle data (nejnovější první)
+        formatted_absence["absence_podle_dni"].sort(
+            key=lambda x: x["datum"] if x["datum"] else "", reverse=True
+        )
+        
+        return formatted_absence
         
     except BakalariAuthError as e:
         return {"error": f"Chyba autentizace: {e}"}
@@ -369,7 +399,7 @@ async def staly_rozvrh() -> Dict[str, Any]:
         endpoint = "/api/3/timetable/permanent"
         rozvrh_data = await api_request(endpoint)
         
-        # Vytvoření lookup tabulek
+        # Vytvoření lookup tabulek - používáme konzistentní pojmenování
         hours_lookup = {}
         subjects_lookup = {}
         teachers_lookup = {}
@@ -395,7 +425,9 @@ async def staly_rozvrh() -> Dict[str, Any]:
             for teacher in rozvrh_data["Teachers"]:
                 teachers_lookup[teacher.get("Id")] = {
                     "abbrev": teacher.get("Abbrev"),
-                    "name": teacher.get("Name")
+                    "name": teacher.get("Name"),
+                    # Debug info pro diagnostiku
+                    "raw_teacher": teacher
                 }
         
         if "Rooms" in rozvrh_data:
@@ -427,7 +459,8 @@ async def staly_rozvrh() -> Dict[str, Any]:
                 "api_keys": list(rozvrh_data.keys()) if rozvrh_data else ["No data"],
                 "has_days": "Days" in rozvrh_data if rozvrh_data else False,
                 "days_count": len(rozvrh_data.get("Days", [])) if rozvrh_data else 0,
-                "raw_data_sample": str(rozvrh_data)[:500] if rozvrh_data else "No data"
+                "raw_data_sample": str(rozvrh_data)[:500] if rozvrh_data else "No data",
+                "teachers_sample": list(teachers_lookup.values())[:3]  # Debug: ukázka učitelů
             }
         }
         
@@ -457,7 +490,8 @@ async def staly_rozvrh() -> Dict[str, Any]:
                                 "subject_id": subject_id,
                                 "teacher_id": teacher_id,
                                 "room_id": room_id,
-                                "atom_keys": list(atom.keys())
+                                "atom_keys": list(atom.keys()),
+                                "teacher_lookup_result": teachers_lookup.get(teacher_id, {})
                             }
                         
                         cas_info = hours_lookup.get(hour_id, {})
@@ -471,11 +505,8 @@ async def staly_rozvrh() -> Dict[str, Any]:
                         zkratka_predmetu = subject_info.get("abbrev")
                         
                         teacher_info = teachers_lookup.get(teacher_id, {})
-                        ucitel = teacher_info.get("abbrev")
-                        if not ucitel and teacher_info.get("name"):
-                            # Zkus vzít příjmení z celého jména
-                            full_name = teacher_info.get("name")
-                            ucitel = full_name.split()[-1] if full_name else None
+                        # OPRAVENO: Používáme konzistentně plné jméno učitele, pokud není k dispozici, použijeme zkratku
+                        ucitel = teacher_info.get("name") or teacher_info.get("abbrev")
                         
                         room_info = rooms_lookup.get(room_id, {})
                         mistnost = room_info.get("abbrev")
@@ -492,6 +523,7 @@ async def staly_rozvrh() -> Dict[str, Any]:
                             "predmet": predmet,
                             "zkratka_predmetu": zkratka_predmetu,
                             "ucitel": ucitel,
+                            "ucitel_zkratka": teacher_info.get("abbrev"),
                             "mistnost": mistnost,
                             "skupina": skupina
                         }
