@@ -541,6 +541,103 @@ async def staly_rozvrh() -> Dict[str, Any]:
         return {"error": f"Neočekávaná chyba: {e}"}
 
 
+@mcp.tool()
+async def znamky() -> Dict[str, Any]:
+    """
+    Získá všechny známky studenta organizované podle předmětů.
+    
+    Returns:
+        Dict obsahující předměty s jejich známkami, průměry a dalšími informacemi
+    """
+    try:
+        endpoint = "/api/3/marks"
+        marks_data = await api_request(endpoint)
+        
+        # Zpracování dat o známkách
+        formatted_marks = {
+            "typ": "znamky",  
+            "predmety": []
+        }
+        
+        if "Subjects" in marks_data:
+            for subject in marks_data["Subjects"]:
+                subject_info = {
+                    "predmet": {
+                        "id": subject.get("Subject", {}).get("Id"),
+                        "nazev": subject.get("Subject", {}).get("Name"),
+                        "zkratka": subject.get("Subject", {}).get("Abbrev")
+                    },
+                    "prumer": (subject.get("AverageText") or "").strip(),
+                    "docasna_znamka": (subject.get("TemporaryMark") or "").strip(),
+                    "poznamka_k_predmetu": (subject.get("SubjectNote") or "").strip(),
+                    "poznamka_k_docasne_znamce": (subject.get("TemporaryMarkNote") or "").strip(),
+                    "pouze_body": subject.get("PointsOnly", False),
+                    "predikce_povozena": subject.get("MarkPredictionEnabled", False),
+                    "znamky": []
+                }
+                
+                # Zpracování jednotlivých známek
+                if "Marks" in subject:
+                    for mark in subject["Marks"]:
+                        mark_info = {
+                            "id": mark.get("Id"),
+                            "datum_znamky": mark.get("MarkDate", "").split("T")[0] if mark.get("MarkDate") else None,
+                            "datum_editace": mark.get("EditDate", "").split("T")[0] if mark.get("EditDate") else None,
+                            "nazev": (mark.get("Caption") or "").strip(),
+                            "tema": (mark.get("Theme") or "").strip(),
+                            "znamka_text": (mark.get("MarkText") or "").strip(),
+                            "ucitel_id": mark.get("TeacherId"),
+                            "typ": mark.get("Type"),
+                            "typ_poznamka": (mark.get("TypeNote") or "").strip(),
+                            "vaha": mark.get("Weight"),
+                            "predmet_id": mark.get("SubjectId"),
+                            "je_nova": mark.get("IsNew", False),
+                            "je_bodova": mark.get("IsPoints", False),
+                            "vypocitana_znamka": (mark.get("CalculatedMarkText") or "").strip(),
+                            "poradi_ve_tride": mark.get("ClassRankText"),
+                            "body_text": (mark.get("PointsText") or "").strip(),
+                            "max_bodu": mark.get("MaxPoints", 0)
+                        }
+                        
+                        # Přidání informací o bodování pokud je známka bodová
+                        if mark_info["je_bodova"] and mark_info["max_bodu"] > 0:
+                            try:
+                                body_ziskane = float(mark_info["znamka_text"])
+                                mark_info["procento"] = round((body_ziskane / mark_info["max_bodu"]) * 100, 2)
+                            except (ValueError, ZeroDivisionError):
+                                mark_info["procento"] = None
+                        
+                        subject_info["znamky"].append(mark_info)
+                
+                # Seřazení známek podle data (nejnovější první)
+                subject_info["znamky"].sort(
+                    key=lambda x: x["datum_znamky"] if x["datum_znamky"] else "", 
+                    reverse=True
+                )
+                
+                formatted_marks["predmety"].append(subject_info)
+        
+        # Seřazení předmětů podle názvu
+        formatted_marks["predmety"].sort(key=lambda x: x["predmet"]["nazev"] or "")
+        
+        # Přidání souhrnu
+        formatted_marks["souhrn"] = {
+            "celkem_predmetu": len(formatted_marks["predmety"]),
+            "celkem_znamek": sum(len(p["znamky"]) for p in formatted_marks["predmety"]),
+            "nove_znamky": sum(len([z for z in p["znamky"] if z["je_nova"]]) for p in formatted_marks["predmety"]),
+            "predmety_s_docasnou_znamkou": len([p for p in formatted_marks["predmety"] if p["docasna_znamka"]])
+        }
+        
+        return formatted_marks
+        
+    except BakalariAuthError as e:
+        return {"error": f"Chyba autentizace: {e}"}
+    except BakalariAPIError as e:
+        return {"error": f"Chyba API: {e}"}
+    except Exception as e:
+        return {"error": f"Neočekávaná chyba: {e}"}
+
+
 def main():
     """Hlavní funkce pro spuštění MCP serveru"""
     parser = argparse.ArgumentParser(description="Bakaláři v3 API MCP Server")
