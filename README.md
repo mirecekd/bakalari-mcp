@@ -2,14 +2,19 @@
 
 MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup k Bakaláři školnímu systému přes standardizované MCP rozhraní.
 
-## sponzoring :)
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mirecekdg)
+<div align="center">
+  [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mirecekdg)
+</div>
 
 ## Funkce
 
 - **rozvrh** - Získání rozvrhu pro konkrétní datum nebo aktuální rozvrh
 - **staly_rozvrh** - Získání stálého rozvrhu (základní rozvrh bez změn)
+- **absence** - Získání informací o basencích
+- **znamky** - Získání informací o známkách
+
+
+
 
 ## Instalace a spuštění
 
@@ -81,6 +86,13 @@ uvx --from ./dist/bakalari_mcp_server-1.0.0-py3-none-any.whl bakalari-mcp-server
 # Nebo z aktuálního adresáře během vývoje
 uvx --from . bakalari-mcp-server --user USERNAME --password PASSWORD --url https://your-school.bakalari.cz
 ```
+
+## Jak to funguje
+
+<div align="center">
+  <img src="assets/bakalari-mcp.png" alt="Bakaláři MCP Server Logo" width="400" />
+</div>
+
 
 ### Build balíčku
 
