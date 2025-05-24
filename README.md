@@ -1,6 +1,6 @@
 # Bakaláři MCP Server
 
-MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup k Bakaláři školnímu systému přes standardizované MCP rozhraní.
+MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup k Bakaláři školnímu systému přes standardizované MCP rozhraní. 
 
 <div align="center">
   
@@ -8,14 +8,16 @@ MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup 
 
 </div>
 
+## Upozornění
+
+!! K používání tohoto projektu je potřeba trošku umět s dockerem/pythonem a vědět, jak funguje připojení MCP k danému LLM klientu !!
+
 ## Funkce
 
 - **rozvrh** - Získání rozvrhu pro konkrétní datum nebo aktuální rozvrh
 - **staly_rozvrh** - Získání stálého rozvrhu (základní rozvrh bez změn)
 - **absence** - Získání informací o basencích
 - **znamky** - Získání informací o známkách
-
-
 
 
 ## Instalace a spuštění
@@ -261,33 +263,8 @@ Pro použití jako HTTP server přes MCP proxy:
    docker run -d -e BAKALARI_USER=your_user -e BAKALARI_PASSWORD=your_pass -e BAKALARI_URL=your_url -p 8805:8805 mirecekd/bakalari-mcp-server:proxy
    ```
 
-3. **Aktualizuj MCP settings** v `cline_mcp_settings.json`
-4. **Restartuj Cline** pro načtení nové konfigurace
-
-## Struktura projektu
-
-```
-bakalari-mcp-server/
-├── src/
-│   └── bakalari_mcp_server/
-│       ├── __init__.py
-│       └── server.py          # Hlavní MCP server
-├── main.py                   # Entry point wrapper
-├── Dockerfile.cli           # Docker kontejner pro CLI (stdio)
-├── Dockerfile.proxy         # Docker kontejner pro HTTP proxy
-├── start.sh                 # Start skript pro proxy
-├── build-cli.sh            # Build skript pro CLI verzi
-├── build-proxy.sh          # Build skript pro proxy verzi
-├── build-all.sh            # Build skript pro obě verze
-├── build.sh                # Legacy build skript (deprecated)
-├── docker-compose.yml       # Docker Compose konfigurace
-├── .dockerignore           # Docker ignore pravidla
-├── .env.example            # Příklad konfigurace
-├── dist/                   # Build výstupy (po python3 -m build)
-├── pyproject.toml         # Konfigurace balíčku
-├── README.md
-└── LICENSE
-```
+3. **Aktualizuj MCP settings aplikace** v `claude_desktop_config.json`, `anythingllm_mcp_servers.json`, `cline_mcp_settings.json`
+4. **Restartuj aplikaci** pro načtení nové konfigurace
 
 ## Autentizace
 
@@ -348,11 +325,11 @@ Server rozpoznává a správně zpracovává:
 
 ## Technické detaily
 
-- **Protokol**: MCP přes stdio nebo HTTP (s proxy)
+- **Protokol**: MCP přes stdio nebo HTTP (s mcp-proxy)
 - **Framework**: FastMCP
 - **HTTP klient**: aiohttp (async)
 - **Python verze**: 3.8+
-- **Distribuce**: Python wheel balíček kompatibilní s uvx
+- **Distribuce**: source code
 - **Proxy**: mcp-proxy pro HTTP transport
 
 ## Vývojáři
