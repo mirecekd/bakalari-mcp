@@ -79,7 +79,7 @@ jobs:
         echo "| proxy   | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| http    | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Images built for platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+        echo "Images built for platforms: linux/amd64, linux/arm64, linux/aarch64" >> $GITHUB_STEP_SUMMARY
         echo "Registry: ghcr.io/${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Available images:" >> $GITHUB_STEP_SUMMARY
