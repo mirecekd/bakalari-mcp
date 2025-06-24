@@ -22,6 +22,33 @@ MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup 
 
 ## Instalace a spuštění
 
+### Dostupné transport metody
+
+Server podporuje tři transport metody:
+
+1. **CLI (stdio)** - Přímá MCP komunikace přes stdin/stdout
+2. **Proxy (HTTP)** - HTTP server pomocí mcp-proxy na portu 8805
+3. **HTTP Streaming** - Nativní HTTP streaming transport na portu 8806
+
+### Spuštění jako HTTP Streaming server
+
+Pro spuštění s nativním HTTP streaming transportem na portu 8806:
+
+```bash
+# Build HTTP streaming image
+./build-http.sh
+# nebo manuálně
+docker build -f Dockerfile.http -t mirecekd/bakalari-mcp-server:http .
+
+# Spuštění
+docker run -p 8806:8806 mirecekd/bakalari-mcp-server:http \
+  --user YOUR_USERNAME \
+  --password YOUR_PASSWORD \
+  --url https://your-school.bakalari.cz
+```
+
+Server bude dostupný jako HTTP streaming MCP na `http://localhost:8806`.
+
 ### Spuštění jako HTTP server pomocí MCP proxy
 
 Pro spuštění jako HTTP server na portu 8805:
@@ -244,6 +271,62 @@ Pro použití jako HTTP server přes MCP proxy:
   }
 }
 ```
+
+### Pro HTTP Streaming mode (nejnovější)
+
+Pro použití s nativním HTTP streaming transportem:
+
+```json
+{
+  "mcpServers": {
+    "bakalari-mcp-server": {
+      "autoApprove": [
+        "rozvrh",
+        "staly_rozvrh"
+      ],
+      "disabled": false,
+      "timeout": 60,
+      "url": "http://localhost:8806",
+      "transportType": "http"
+    }
+  }
+}
+```
+
+## GitHub Container Registry (GHCR)
+
+Pre-built Docker images jsou dostupné na GitHub Container Registry:
+
+### Dostupné images:
+
+- **CLI (stdio)**: `ghcr.io/mirecekd/bakalari-mcp:latest-cli`
+- **Proxy (HTTP)**: `ghcr.io/mirecekd/bakalari-mcp:latest-proxy`  
+- **HTTP Streaming**: `ghcr.io/mirecekd/bakalari-mcp:latest-http`
+
+### Použití GHCR images:
+
+```bash
+# CLI version
+docker run --rm -i ghcr.io/mirecekd/bakalari-mcp:latest-cli \
+  --user USERNAME --password PASSWORD --url https://school.bakalari.cz
+
+# Proxy version (port 8805)
+docker run -p 8805:8805 \
+  -e BAKALARI_USER=USERNAME \
+  -e BAKALARI_PASSWORD=PASSWORD \
+  -e BAKALARI_URL=https://school.bakalari.cz \
+  ghcr.io/mirecekd/bakalari-mcp:latest-proxy
+
+# HTTP Streaming version (port 8806)
+docker run -p 8806:8806 ghcr.io/mirecekd/bakalari-mcp:latest-http \
+  --user USERNAME --password PASSWORD --url https://school.bakalari.cz
+```
+
+### Multi-arch support:
+
+Všechny images podporují:
+- **linux/amd64** (Intel/AMD x64)
+- **linux/arm64** (Apple Silicon, ARM64)
 
 ### Postupy pro MCP konfiguraci
 
