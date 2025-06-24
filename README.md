@@ -38,10 +38,10 @@ Pro spuštění s nativním HTTP streaming transportem na portu 8806:
 # Build HTTP streaming image
 ./build-http.sh
 # nebo manuálně
-docker build -f Dockerfile.http -t mirecekd/bakalari-mcp-server:http .
+docker build -f Dockerfile.http -t mirecekd/bakalari-mcp:http .
 
 # Spuštění
-docker run -p 8806:8806 mirecekd/bakalari-mcp-server:http \
+docker run -p 8806:8806 mirecekd/bakalari-mcp:http \
   --user YOUR_USERNAME \
   --password YOUR_PASSWORD \
   --url https://your-school.bakalari.cz
@@ -57,10 +57,10 @@ Pro spuštění jako HTTP server na portu 8805:
 # Build MCP proxy image
 ./build-proxy.sh
 # nebo manuálně
-docker build -f Dockerfile.proxy -t mirecekd/bakalari-mcp-server:proxy .
+docker build -f Dockerfile.proxy -t mirecekd/bakalari-mcp:proxy .
 
 # Spuštění s environment variables
-docker run -e BAKALARI_USER=your_user -e BAKALARI_PASSWORD=your_pass -e BAKALARI_URL=your_url -p 8805:8805 mirecekd/bakalari-mcp-server:proxy
+docker run -e BAKALARI_USER=your_user -e BAKALARI_PASSWORD=your_pass -e BAKALARI_URL=your_url -p 8805:8805 mirecekd/bakalari-mcp:proxy
 ```
 
 Server bude dostupný jako SSE MCP na `http://localhost:8805`.
@@ -73,10 +73,10 @@ Server bude dostupný jako SSE MCP na `http://localhost:8805`.
 # Build CLI Docker image
 ./build-cli.sh
 # nebo manuálně
-docker build -f Dockerfile.cli -t mirecekd/bakalari-mcp-server:cli .
+docker build -f Dockerfile.cli -t mirecekd/bakalari-mcp:cli .
 
 # Spuštění přes Docker
-docker run --rm -i mirecekd/bakalari-mcp-server:cli \
+docker run --rm -i mirecekd/bakalari-mcp:cli \
   --user USERNAME \
   --password PASSWORD \
   --url https://your-school.bakalari.cz
@@ -343,7 +343,7 @@ Všechny images podporují:
 
 2. **Spusť kontejner** (pro HTTP mode):
    ```bash
-   docker run -d -e BAKALARI_USER=your_user -e BAKALARI_PASSWORD=your_pass -e BAKALARI_URL=your_url -p 8805:8805 mirecekd/bakalari-mcp-server:proxy
+   docker run -d -e BAKALARI_USER=your_user -e BAKALARI_PASSWORD=your_pass -e BAKALARI_URL=your_url -p 8805:8805 mirecekd/bakalari-mcp:proxy
    ```
 
 3. **Aktualizuj MCP settings aplikace** v `claude_desktop_config.json`, `anythingllm_mcp_servers.json`, `cline_mcp_settings.json`
