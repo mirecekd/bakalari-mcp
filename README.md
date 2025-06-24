@@ -1,4 +1,4 @@
-# Bakaláři MCP Server
+???# Bakaláři MCP Server
 
 MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup k Bakaláři školnímu systému přes standardizované MCP rozhraní. 
 
@@ -100,7 +100,7 @@ docker-compose --profile dev up bakalari-mcp-dev
 
 ```bash
 # Pro MCP konfiguraci - nahraď uvx příkaz tímto:
-docker run --rm -i bakalari-mcp-server \
+docker run --rm -i ghcr.io/mirecekd/bakalari-mcp:latest-cli \
   --user YOUR_USER \
   --password YOUR_PASSWORD \
   --url https://skola.bakalari.cz
@@ -237,7 +237,7 @@ Pro použití s Docker místo uvx, aktualizuj MCP konfiguraci:
         "run",
         "--rm",
         "-i",
-        "bakalari-mcp-server",
+        "ghcr.io/mirecekd/bakalari-mcp:latest-cli",
         "--user",
         "YOUR_USER",
         "--password",
