@@ -30,6 +30,33 @@ services:
     #   - ./data:/app/data
 
 # Pro development
+  bakalari-mcp-http:
+    image: ghcr.io/mirecekd/bakalari-mcp:latest-http
+    # Uncomment to build locally instead:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.http
+    container_name: bakalari-mcp-http
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    command: [
+      "--user", "${BAKALARI_USER:-your_username}",
+      "--password", "${BAKALARI_PASSWORD:-your_password}",
+      "--url", "${BAKALARI_URL:-https://school.bakalari.cz}",
+      "--host", "0.0.0.0",
+      "--port", "8806"
+    ]
+    ports:
+      - "8806:8806"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8806/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   bakalari-mcp-dev:
     build:
       context: .

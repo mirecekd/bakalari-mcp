@@ -1,0 +1,49 @@
+# Bakaláři MCP Server - HTTP Streaming Version
+# =============================================
+# This version provides HTTP streaming transport for bidirectional MCP communication.
+# Use this for modern MCP clients that support HTTP streaming transport.
+FROM python:3.11-slim
+
+# Nastavení working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Kopírování všech souborů nejdříve
+COPY pyproject.toml ./
+COPY README.md ./
+COPY LICENSE ./
+COPY src/ ./src/
+COPY main_http.py ./
+
+# Instalace build dependencies a následně aplikačních dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Nastavení Python path
+ENV PYTHONPATH=/app
+
+# Expose port pro HTTP streaming
+EXPOSE 8806
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8806/health || exit 1
+
+# Set default environment variables
+ENV HOST=0.0.0.0
+ENV PORT=8806
+
+# Entry point s možností předání parametrů
+ENTRYPOINT ["python", "main_http.py"]
+
+# Default parametry (můžou být přepsány při docker run)
+CMD ["--host", "0.0.0.0", "--port", "8806"]
+
+# Metadata
+LABEL maintainer="Miroslav Dvořák" \
+      description="MCP Server pro Bakaláři v3 API - HTTP Streaming transport" \
+      version="1.0.0"
