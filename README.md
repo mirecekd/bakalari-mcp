@@ -1,4 +1,4 @@
-???# Bakaláři MCP Server
+# Bakaláři MCP Server
 
 MCP (Model Context Protocol) server pro Bakaláři v3 API. Umožňuje přístup k Bakaláři školnímu systému přes standardizované MCP rozhraní. 
 
