@@ -30,8 +30,8 @@ ENV PYTHONPATH=/app
 EXPOSE 8806
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8806/health || exit 1
+#HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#    CMD curl -f http://localhost:8806/health || exit 1
 
 # Set default environment variables
 ENV HOST=0.0.0.0
